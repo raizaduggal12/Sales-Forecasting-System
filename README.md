@@ -11,8 +11,6 @@
 
 **A production-ready, end-to-end time series forecasting system that trains 4 ML models, auto-selects the best one, and serves predictions via a REST API with a live dashboard UI.**
 
-[🚀 Live Demo](#) · [📖 API Docs](#api-endpoints) · [⚡ Quick Start](#quick-start)
-
 </div>
 
 ---
