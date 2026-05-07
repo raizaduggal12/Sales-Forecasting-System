@@ -15,6 +15,16 @@
 
 ---
 
+## 📸 Screenshots
+
+### Dashboard — Forecast Chart & Model Ranking
+![Dashboard Main](Screenshots/first.png)
+
+### Dashboard — Weekly Forecast Table
+![Dashboard Table](Screenshots/second.png)
+
+---
+
 ## 📌 Overview
 
 This system forecasts the **next 8 weeks of sales for 43 US states** using historical data. It automatically trains and compares **SARIMA, Facebook Prophet, XGBoost, and LSTM** models, selects the best performer, and exposes predictions via a clean REST API with interactive Swagger docs and a beautiful dashboard UI.
@@ -37,7 +47,7 @@ This system forecasts the **next 8 weeks of sales for 43 US states** using histo
 ## 🏗️ Project Structure
 
 ```
-sales-forecasting-system/
+Sales-Forecasting-System/
 │
 ├── 📁 api/
 │   ├── __init__.py
@@ -61,6 +71,10 @@ sales-forecasting-system/
 │   ├── __init__.py
 │   └── data_preprocessing.py   # Load, clean, feature engineering
 │
+├── 📁 screenshots/             # README screenshots
+│   ├── dashboard_main.png
+│   └── dashboard_table.png
+│
 ├── 📄 train.py                 # Main training entry point
 ├── 📄 dashboard.html           # Live UI Dashboard
 ├── 📄 requirements.txt         # All dependencies
@@ -73,8 +87,8 @@ sales-forecasting-system/
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/raizaduggal12/sales-forecasting-system.git
-cd sales-forecasting-system
+git clone https://github.com/raizaduggal12/Sales-Forecasting-System.git
+cd Sales-Forecasting-System
 ```
 
 ### 2. Create and activate virtual environment
@@ -137,8 +151,7 @@ http://localhost:8000/docs
   "forecast": [
     { "date": "2023-12-10", "forecast_sales": 875352648.0 },
     { "date": "2023-12-17", "forecast_sales": 869551424.0 },
-    { "date": "2023-12-24", "forecast_sales": 871760000.0 },
-    ...
+    { "date": "2023-12-24", "forecast_sales": 871760000.0 }
   ]
 }
 ```
