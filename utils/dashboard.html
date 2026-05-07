@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sales Forecasting Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #00f5a0;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --danger: #ef4444;
+    --info: #3b82f6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* Header */
+  header {
+    padding: 32px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  .logo-text h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-text p {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(0,245,160,0.08);
+    border: 1px solid rgba(0,245,160,0.2);
+    border-radius: 999px;
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    margin-bottom: 40px;
+    align-items: end;
+  }
+
+  .control-group label {
+    display: block;
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  select, input[type="number"] {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  select:focus, input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,245,160,0.1);
+  }
+
+  select option { background: var(--surface2); }
+
+  .btn-forecast {
+    padding: 12px 28px;
+    background: linear-gradient(135deg, var(--accent), #00c97a);
+    border: none;
+    border-radius: 10px;
+    color: #0a0a0f;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-forecast:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,245,160,0.3); }
+  .btn-forecast:active { transform: translateY(0); }
+  .btn-forecast:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card:hover { border-color: var(--accent2); }
+
+  .stat-label {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .accent-green { color: var(--accent); }
+  .accent-purple { color: #a78bfa; }
+  .accent-amber { color: var(--accent3); }
+  .accent-blue { color: #60a5fa; }
+
+  /* Main grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .card-body { padding: 24px; }
+
+  /* Chart */
+  .chart-container { position: relative; height: 280px; }
+
+  /* Model comparison */
+  .model-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .model-item {
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .model-item.winner {
+    border-color: var(--accent);
+    background: rgba(0,245,160,0.05);
+  }
+
+  .model-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .model-name {
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .winner-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    background: var(--accent);
+    color: #0a0a0f;
+    border-radius: 999px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+  }
+
+  .model-rmse {
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+  }
+
+  .model-bar-bg {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .model-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+
+  /* Forecast table */
+  .forecast-table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .week-num {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .sales-val {
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .trend-up { color: #4ade80; font-size: 12px; }
+  .trend-down { color: #f87171; font-size: 12px; }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 16px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+  }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .empty-icon { font-size: 40px; opacity: 0.4; }
+  .empty-text { font-size: 14px; font-family: 'Space Mono', monospace; }
+  .empty-sub { font-size: 12px; opacity: 0.6; }
+
+  /* Error */
+  .error-banner {
+    padding: 14px 20px;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px;
+    color: #fca5a5;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    margin-bottom: 24px;
+    display: none;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .controls { grid-template-columns: 1fr 1fr; }
+    .btn-forecast { grid-column: span 2; }
+  }
+
+  @media (max-width: 500px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .controls { grid-template-columns: 1fr; }
+    .btn-forecast { grid-column: span 1; }
+  }
+
+  /* Animate in */
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">📈</div>
+        <div class="logo-text">
+          <h1>Sales Forecasting System</h1>
+          <p>SARIMA · Prophet · XGBoost · LSTM</p>
+        </div>
+      </div>
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span id="api-status">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-group">
+      <label>Select State</label>
+      <select id="state-select">
+        <option value="">— Loading states —</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Forecast Weeks</label>
+      <input type="number" id="weeks-input" value="8" min="1" max="52"/>
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="btn-forecast" id="forecast-btn" onclick="runForecast()">Run Forecast →</button>
+    </div>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- Stats row -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Best Model</div>
+      <div class="stat-value accent-green" id="stat-model">—</div>
+      <div class="stat-sub">Selected by RMSE</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">MAPE</div>
+      <div class="stat-value accent-purple" id="stat-mape">—</div>
+      <div class="stat-sub">Mean abs % error</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">RMSE</div>
+      <div class="stat-value accent-amber" id="stat-rmse">—</div>
+      <div class="stat-sub">Root mean sq. error</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Forecast Horizon</div>
+      <div class="stat-value accent-blue" id="stat-weeks">8 wks</div>
+      <div class="stat-sub">Weekly predictions</div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- Chart card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Forecast Chart</span>
+        <span style="font-size:12px; color:var(--muted); font-family:'Space Mono',monospace" id="chart-state-label">Select a state to begin</span>
+      </div>
+      <div class="card-body">
+        <div id="chart-area">
+          <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <div class="empty-text">No data yet</div>
+            <div class="empty-sub">Select a state and click Run Forecast</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model comparison card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Model Ranking</span>
+      </div>
+      <div class="card-body">
+        <div id="model-list">
+          <div class="empty-state">
+            <div class="empty-icon">🤖</div>
+            <div class="empty-text">Run a forecast</div>
+            <div class="empty-sub">to see model comparison</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Forecast table -->
+  <div class="card" style="margin-bottom: 40px;">
+    <div class="card-header">
+      <span class="card-title">Weekly Forecast Data</span>
+      <span style="font-size:12px; color:var(--muted); font-family:'Space Mono',monospace" id="table-label">—</span>
+    </div>
+    <div id="forecast-table-area">
+      <div class="empty-state" style="padding: 40px;">
+        <div class="empty-text">Forecast data will appear here</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let chartInstance = null;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const r = await fetch(`${API}/`);
+    const d = await r.json();
+    document.getElementById('api-status').textContent = `API Live · ${d.states_available} states`;
+  } catch(e) {
+    document.getElementById('api-status').textContent = 'API Offline';
+    document.querySelector('.status-badge').style.borderColor = 'rgba(239,68,68,0.3)';
+    document.querySelector('.status-badge').style.color = '#fca5a5';
+    document.querySelector('.status-dot').style.background = '#ef4444';
+  }
+
+  try {
+    const r = await fetch(`${API}/states`);
+    const d = await r.json();
+    const sel = document.getElementById('state-select');
+    sel.innerHTML = '<option value="">— Select a state —</option>';
+    d.states.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+  } catch(e) {
+    showError('Could not load states. Make sure the API is running at localhost:8000');
+  }
+}
+
+// ── Run forecast ──────────────────────────────────────────────────────────
+async function runForecast() {
+  const state = document.getElementById('state-select').value;
+  const weeks = parseInt(document.getElementById('weeks-input').value) || 8;
+
+  if (!state) { showError('Please select a state first.'); return; }
+
+  hideError();
+  setLoading(true);
+
+  try {
+    const [forecastRes, metricsRes] = await Promise.all([
+      fetch(`${API}/forecast/${encodeURIComponent(state)}?weeks=${weeks}`),
+      fetch(`${API}/metrics/${encodeURIComponent(state)}`)
+    ]);
+
+    const forecast = await forecastRes.json();
+    const metrics  = await metricsRes.json();
+
+    renderStats(forecast, metrics);
+    renderChart(forecast);
+    renderModelList(metrics);
+    renderTable(forecast);
+
+  } catch(e) {
+    showError('Failed to fetch forecast. Is the API running?');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Render stats ──────────────────────────────────────────────────────────
+function renderStats(forecast, metrics) {
+  const best = forecast.best_model;
+  const m = metrics.model_metrics[best] || {};
+  document.getElementById('stat-model').textContent = best;
+  document.getElementById('stat-mape').textContent = m.MAPE ? m.MAPE.toFixed(1) + '%' : '—';
+  document.getElementById('stat-rmse').textContent = m.RMSE ? fmtNum(m.RMSE) : '—';
+  document.getElementById('stat-weeks').textContent = forecast.forecast_weeks + ' wks';
+}
+
+// ── Render chart ──────────────────────────────────────────────────────────
+function renderChart(forecast) {
+  const area = document.getElementById('chart-area');
+  area.innerHTML = '<div class="chart-container"><canvas id="myChart"></canvas></div>';
+
+  document.getElementById('chart-state-label').textContent =
+    forecast.state + ' · ' + forecast.best_model;
+
+  const labels = forecast.forecast.map(f => {
+    const d = new Date(f.date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  const values = forecast.forecast.map(f => f.forecast_sales);
+
+  if (chartInstance) { chartInstance.destroy(); }
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(0,245,160,0.3)');
+  gradient.addColorStop(1, 'rgba(0,245,160,0.0)');
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Forecast Sales',
+        data: values,
+        borderColor: '#00f5a0',
+        backgroundColor: gradient,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#00f5a0',
+        pointBorderColor: '#0a0a0f',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a26',
+          borderColor: '#2a2a3a',
+          borderWidth: 1,
+          titleColor: '#6b6b8a',
+          bodyColor: '#00f5a0',
+          bodyFont: { family: 'Space Mono', size: 13, weight: 'bold' },
+          titleFont: { family: 'Space Mono', size: 11 },
+          callbacks: {
+            label: ctx => ' ' + fmtNum(ctx.parsed.y)
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(42,42,58,0.6)' },
+          ticks: { color: '#6b6b8a', font: { family: 'Space Mono', size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(42,42,58,0.6)' },
+          ticks: {
+            color: '#6b6b8a',
+            font: { family: 'Space Mono', size: 11 },
+            callback: v => fmtNum(v)
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Render model list ─────────────────────────────────────────────────────
+function renderModelList(metrics) {
+  const models = Object.entries(metrics.model_metrics)
+    .sort((a, b) => a[1].RMSE - b[1].RMSE);
+
+  const best = metrics.best_model;
+  const maxRmse = Math.max(...models.map(m => m[1].RMSE));
+  const colors = ['#00f5a0', '#a78bfa', '#f59e0b', '#60a5fa'];
+
+  const html = models.map(([name, m], i) => `
+    <div class="model-item ${name === best ? 'winner' : ''}">
+      <div class="model-item-top">
+        <div class="model-name">
+          <span>${name}</span>
+          ${name === best ? '<span class="winner-badge">BEST</span>' : ''}
+        </div>
+        <div class="model-rmse">RMSE: ${fmtNum(m.RMSE)}</div>
+      </div>
+      <div class="model-bar-bg">
+        <div class="model-bar" style="width:${(m.RMSE/maxRmse*100).toFixed(1)}%; background:${colors[i]}"></div>
+      </div>
+      <div style="display:flex; gap:16px; margin-top:6px;">
+        <span style="font-size:11px; color:var(--muted); font-family:'Space Mono',monospace">
+          MAE: ${fmtNum(m.MAE)}
+        </span>
+        <span style="font-size:11px; color:var(--muted); font-family:'Space Mono',monospace">
+          MAPE: ${m.MAPE.toFixed(2)}%
+        </span>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('model-list').innerHTML = html;
+}
+
+// ── Render table ──────────────────────────────────────────────────────────
+function renderTable(forecast) {
+  document.getElementById('table-label').textContent =
+    forecast.state + ' — next ' + forecast.forecast_weeks + ' weeks';
+
+  const rows = forecast.forecast.map((f, i) => {
+    const prev = i > 0 ? forecast.forecast[i-1].forecast_sales : f.forecast_sales;
+    const diff = f.forecast_sales - prev;
+    const pct  = i > 0 ? ((diff / prev) * 100).toFixed(1) : null;
+    const trend = pct === null ? '' :
+      parseFloat(pct) >= 0
+        ? `<span class="trend-up">▲ ${pct}%</span>`
+        : `<span class="trend-down">▼ ${Math.abs(pct)}%</span>`;
+
+    return `<tr>
+      <td><span class="week-num">W${i+1}</span></td>
+      <td>${new Date(f.date).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'})}</td>
+      <td><span class="sales-val">${fmtNum(f.forecast_sales)}</span></td>
+      <td>${trend}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('forecast-table-area').innerHTML = `
+    <div class="forecast-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Week</th>
+            <th>Date</th>
+            <th>Forecast Sales</th>
+            <th>WoW Change</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function fmtNum(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toFixed(0);
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('forecast-btn');
+  btn.disabled = on;
+  btn.textContent = on ? 'Loading...' : 'Run Forecast →';
+  if (on) {
+    document.getElementById('chart-area').innerHTML =
+      '<div class="loading"><div class="spinner"></div><span>Fetching forecast...</span></div>';
+    document.getElementById('model-list').innerHTML =
+      '<div class="loading"><div class="spinner"></div><span>Loading models...</span></div>';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('error-banner').style.display = 'none';
+}
+
+// Enter key triggers forecast
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') runForecast();
+});
+
+init();
+</script>
+</body>
+</html>
