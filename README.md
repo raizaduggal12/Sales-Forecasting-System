@@ -71,7 +71,7 @@ Sales-Forecasting-System/
 │   ├── __init__.py
 │   └── data_preprocessing.py   # Load, clean, feature engineering
 │
-├── 📁 screenshots/             # README screenshots
+├── 📁 Screenshots/             # README screenshots
 │   ├── dashboard_main.png
 │   └── dashboard_table.png
 │
